@@ -268,6 +268,23 @@ window.ACTIVITIES = [
     words: "cadê, achou, encaixa, vira, junto, inteiro",
   },
   {
+    id: "contar-de-verdade",
+    band: "dois",
+    domain: "cognitivo",
+    title: "Contar de verdade",
+    summary: "Contar degraus, dedos, colheres: um número por toque. Aos 2 anos o objetivo é a cantilena \"um, dois, três\" e a ideia de um por vez, não a quantidade.",
+    materials: ["Coisas do dia a dia em pequena quantidade: 3 frutas, 3 degraus, 3 blocos", "Sua mão para tocar junto"],
+    steps: [
+      "Nos degraus: suba tocando cada um com o pé e conte alto: \"um, dois, três\". Repita todo dia.",
+      "Na mesa: ponha 3 frutas. Toque uma por vez com o dedo {dela} sobre o seu: \"um, dois, três. Três bananas!\"",
+      "Brinque de \"um, dois, três, já!\" para correr, pular, jogar a bola. A pausa antes do \"já\" é o que {ela} mais gosta.",
+      "Peça \"me dá um\" e depois \"me dá mais\". Um versus muitos vem antes de qualquer número.",
+      "Cante músicas com números (\"um, dois, feijão com arroz\") apontando nos dedos.",
+    ],
+    observe: ["Recita \"um, dois, três\" mesmo fora de ordem?", "Toca um objeto por número ou passa por cima?", "Entende \"um\" e \"mais\" quando você pede?"],
+    words: "um, dois, três, mais, um só, já",
+  },
+  {
     id: "encaixe-tampas",
     band: "dois",
     domain: "motorFino",

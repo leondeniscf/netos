@@ -191,6 +191,17 @@
 
     <div class="album-grid" id="album-grid"></div>
 
+    <!-- jogo de números: dentro do álbum para manter a mesma sessão -->
+    <div class="numbers" id="numbers" hidden>
+      <div class="puzzle-top">
+        <button class="puzzle-back" id="numbers-back" aria-label="Voltar ao álbum">‹</button>
+        <span class="colors-prompt" id="numbers-prompt">Vamos contar!</span>
+        <span class="puzzle-timer" id="numbers-timer"></span>
+      </div>
+      <div class="numbers-stage" id="numbers-stage"></div>
+      <div class="colors-flash numbers-flash" id="numbers-flash"><span id="numbers-flash-digit"></span><small id="numbers-flash-word"></small></div>
+    </div>
+
     <!-- jogo de cores: dentro do álbum para manter a mesma sessão -->
     <div class="colors" id="colors" hidden>
       <div class="puzzle-top">
@@ -310,6 +321,14 @@
           </select>
         </label>
         <p class="hint">Leia a pergunta em voz alta e espere. Se errar, a cor certa pulsa: aponte junto e diga o nome. Sem corrigir com "não".</p>
+        <label class="field" style="margin-top:12px">
+          <span>Jogo de contar: até</span>
+          <select id="numbers-max">
+            <option value="3">3</option>
+            <option value="5">5</option>
+          </select>
+        </label>
+        <p class="hint">Aos 2 anos, contar até 3 tocando um objeto por vez já é muito. Passe para 5 só depois dos 3 anos ou quando o 3 estiver fácil.</p>
       </div>
 
       <div class="card">

@@ -400,6 +400,7 @@
       this.stopAudio();
       Puzzle.close();
       Colors.close();
+      Numbers.close();
       if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
     },
     renderGrid() {
@@ -415,6 +416,9 @@
         </button>` : "") + `
         <button class="album-card cores" id="album-cores" aria-label="Jogo de cores">
           <span class="ic">🎨</span><span class="name">Cores</span>
+        </button>
+        <button class="album-card contar" id="album-contar" aria-label="Jogo de contar">
+          <span class="ic">🔢</span><span class="name">Contar</span>
         </button>`;
     },
     updateTimer() {
@@ -422,7 +426,7 @@
       const total = this.limitMin() * 60000;
       const left = Math.max(0, total - elapsed);
       const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
-      $("#album-timer").textContent = $("#puzzle-timer").textContent = $("#colors-timer").textContent = `${m}:${String(s).padStart(2, "0")}`;
+      $("#album-timer").textContent = $("#puzzle-timer").textContent = $("#colors-timer").textContent = $("#numbers-timer").textContent = `${m}:${String(s).padStart(2, "0")}`;
       if (left <= 0) go("end");
     },
     stopAudio() {
@@ -651,8 +655,77 @@
   });
   $("#colors-back").addEventListener("click", () => Colors.close());
 
+
+  // ---------- Jogo de contar (dentro da sessão do álbum) ----------
+  const NUM_WORDS = ["", "um", "dois", "três", "quatro", "cinco"];
+  const TOKEN_COLORS = ["#e0322b", "#2f6fd6", "#f2c12e", "#3aa655", "#f07f1d"];
+  const Numbers = {
+    open: false, n: 0, count: 0, rounds: 0, last: 0, card: null, busy: false,
+    max() { return LS.get("numbersMax", 3) === 5 ? 5 : 3; },
+    start() {
+      this.open = true; this.rounds = 0; this.last = 0;
+      this.card = Album.cards.find((c) => c.id === Album.lastId) || null;
+      Album.stopAudio();
+      $("#numbers").hidden = false;
+      this.round();
+    },
+    close() { this.open = false; $("#numbers").hidden = true; speechSynthesis?.cancel?.(); },
+    say(text) {
+      if (!("speechSynthesis" in window)) return;
+      const u = new SpeechSynthesisUtterance(text); u.lang = "pt-BR"; u.rate = 0.8;
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    },
+    round() {
+      const max = this.max();
+      // sobe devagar: nas primeiras rodadas só 1 e 2; evita repetir o mesmo número
+      const ceil = this.rounds < 2 ? Math.min(2, max) : max;
+      let n; do { n = 1 + Math.floor(Math.random() * ceil); } while (n === this.last && ceil > 1);
+      this.n = n; this.last = n; this.count = 0; this.busy = false;
+      const color = TOKEN_COLORS[Math.floor(Math.random() * TOKEN_COLORS.length)];
+      const bg = this.card ? `url("${Album.urls.get(this.card.id)}") center/cover no-repeat` : color;
+      $("#numbers-prompt").textContent = "Vamos contar!";
+      const stage = $("#numbers-stage"); stage.innerHTML = "";
+      for (let i = 0; i < n; i++) {
+        const t = document.createElement("button");
+        t.className = "num-token"; t.dataset.i = i; t.setAttribute("aria-label", `objeto ${i + 1}`);
+        t.style.background = bg;
+        stage.appendChild(t);
+      }
+      this.say("Vamos contar!");
+    },
+    tap(el) {
+      if (this.busy || !this.open || el.classList.contains("counted")) return;
+      this.count++;
+      el.classList.add("counted"); el.dataset.n = this.count;
+      this.say(NUM_WORDS[this.count]);
+      if (this.count < this.n) return;
+      this.busy = true; this.rounds++;
+      const flash = $("#numbers-flash");
+      const label = this.card ? `${NUM_WORDS[this.n]} · ${this.card.name}` : NUM_WORDS[this.n];
+      $("#numbers-flash-digit").textContent = this.n;
+      $("#numbers-flash-word").textContent = label;
+      setTimeout(() => {
+        if (!this.open) return;
+        flash.classList.add("show");
+        this.say(NUM_WORDS[this.n] + (this.card ? " " + this.card.name : ""));
+        if (this.card?.audio) setTimeout(() => { const a = new Audio(URL.createObjectURL(this.card.audio)); a.onended = () => URL.revokeObjectURL(a.src); a.play().catch(() => {}); }, 900);
+        setTimeout(() => {
+          flash.classList.remove("show");
+          if (!this.open) return;
+          if (this.rounds >= 8) { this.close(); toast("Chega de contar por agora. Vamos contar degraus de verdade?"); return; }
+          setTimeout(() => this.open && this.round(), 300);
+        }, 2000);
+      }, 700);
+    },
+  };
+  $("#numbers-stage").addEventListener("pointerdown", (e) => {
+    const t = e.target.closest(".num-token"); if (t) { e.preventDefault(); Numbers.tap(t); }
+  });
+  $("#numbers-back").addEventListener("click", () => Numbers.close());
+
   $("#album-grid").addEventListener("pointerdown", (e) => {
     if (e.target.closest("#album-montar")) { Puzzle.start(Album.lastId); return; }
+    if (e.target.closest("#album-contar")) { Numbers.start(); return; }
     if (e.target.closest("#album-cores")) { Colors.start(); return; }
     if (e.target.closest("#album-add")) { go("setup"); return; }
     const b = e.target.closest("[data-card]"); if (b) Album.play(b.dataset.card);
@@ -703,6 +776,7 @@
       $("#limit-select").value = String(Album.limitMin());
       $("#pieces-select").value = String(Puzzle.count());
       $("#colors-options").value = String(Colors.options());
+      $("#numbers-max").value = String(Numbers.max());
       $("#colors-set").value = String(Colors.set().length);
       await Album.load();
       $("#setup-list").innerHTML = Album.cards.length ? Album.cards.map((c) => `
@@ -803,6 +877,7 @@
   });
   const saveColors = () => { LS.set("colors", { options: Number($("#colors-options").value), set: Number($("#colors-set").value) }); toast("Cores salvas"); };
   $("#colors-options").addEventListener("change", saveColors);
+  $("#numbers-max").addEventListener("change", (e) => { LS.set("numbersMax", Number(e.target.value)); toast("Contagem salva"); });
   $("#colors-set").addEventListener("change", saveColors);
   $("#pieces-select").addEventListener("change", (e) => { LS.set("pieces", Number(e.target.value)); toast("Peças salvas"); });
   $("#limit-select").addEventListener("change", (e) => {
