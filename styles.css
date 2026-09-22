@@ -239,3 +239,23 @@ input[type="date"] { padding: 8px 10px; border-radius: 10px; border: 1.5px solid
 .numbers-flash { flex-direction: column; background: var(--ink); }
 .numbers-flash span { font-size: clamp(120px, 40vmin, 280px); line-height: 1; }
 .numbers-flash small { font-size: 34px; font-weight: 800; color: #fff; }
+
+/* ---------- jogo de formas ---------- */
+.album-card.formas { background: #efe3d0; display: grid; place-items: center; }
+.album-card.formas .ic { font-size: 64px; }
+.shapes { position: absolute; inset: 0; background: #fdf6ea; display: flex; flex-direction: column; z-index: 3; }
+.shapes[hidden] { display: none; }
+.shapes-stage { flex: 1; position: relative; overflow: hidden; touch-action: none; }
+.shape-board { position: absolute; border-radius: 26px; background: #efe6d6; box-shadow: inset 0 0 0 3px rgba(60,40,20,.08); }
+.shape { position: absolute; }
+.shape.circulo { border-radius: 50%; }
+.shape.quadrado { border-radius: 10%; }
+.shape.triangulo { clip-path: polygon(50% 4%, 97% 96%, 3% 96%); }
+.shape.estrela { clip-path: polygon(50% 2%, 61% 36%, 98% 36%, 68% 58%, 79% 94%, 50% 72%, 21% 94%, 32% 58%, 2% 36%, 39% 36%); }
+.shape-hole { background: #d6c9b3; }
+.shape-hole.hint { animation: hint 1s ease-in-out 3; }
+.shape-hole.filled { background: transparent; }
+.shape-piece { cursor: grab; transition: transform .12s, left .25s, top .25s; filter: drop-shadow(0 8px 12px rgba(60,40,20,.28)); }
+.shape-piece.drag { transform: scale(1.08); filter: drop-shadow(0 16px 20px rgba(60,40,20,.35)); z-index: 10; transition: transform .12s; }
+.shape-piece.locked { pointer-events: none; filter: none; transition: left .15s, top .15s; }
+.shape-piece.locked::after { content: ""; position: absolute; inset: 0; background: rgba(255,255,255,.35); animation: ring 1s ease-out 1 forwards; }

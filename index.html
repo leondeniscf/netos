@@ -191,6 +191,16 @@
 
     <div class="album-grid" id="album-grid"></div>
 
+    <!-- jogo de formas: dentro do álbum para manter a mesma sessão -->
+    <div class="shapes" id="shapes" hidden>
+      <div class="puzzle-top">
+        <button class="puzzle-back" id="shapes-back" aria-label="Voltar ao álbum">‹</button>
+        <span class="colors-prompt" id="shapes-prompt">Encaixa!</span>
+        <span class="puzzle-timer" id="shapes-timer"></span>
+      </div>
+      <div class="shapes-stage" id="shapes-stage"></div>
+    </div>
+
     <!-- jogo de números: dentro do álbum para manter a mesma sessão -->
     <div class="numbers" id="numbers" hidden>
       <div class="puzzle-top">
@@ -329,6 +339,15 @@
           </select>
         </label>
         <p class="hint">Aos 2 anos, contar até 3 tocando um objeto por vez já é muito. Passe para 5 só depois dos 3 anos ou quando o 3 estiver fácil.</p>
+        <label class="field" style="margin-top:12px">
+          <span>Jogo de formas</span>
+          <select id="shapes-count">
+            <option value="2">círculo e quadrado</option>
+            <option value="3">+ triângulo</option>
+            <option value="4">+ estrela</option>
+          </select>
+        </label>
+        <p class="hint">Duas formas bem diferentes primeiro. Diga o nome da forma quando ela encaixar, não antes.</p>
       </div>
 
       <div class="card">

@@ -401,6 +401,7 @@
       Puzzle.close();
       Colors.close();
       Numbers.close();
+      Shapes.close();
       if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
     },
     renderGrid() {
@@ -419,6 +420,9 @@
         </button>
         <button class="album-card contar" id="album-contar" aria-label="Jogo de contar">
           <span class="ic">🔢</span><span class="name">Contar</span>
+        </button>
+        <button class="album-card formas" id="album-formas" aria-label="Jogo de formas">
+          <span class="ic">🔷</span><span class="name">Formas</span>
         </button>`;
     },
     updateTimer() {
@@ -426,7 +430,7 @@
       const total = this.limitMin() * 60000;
       const left = Math.max(0, total - elapsed);
       const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
-      $("#album-timer").textContent = $("#puzzle-timer").textContent = $("#colors-timer").textContent = $("#numbers-timer").textContent = `${m}:${String(s).padStart(2, "0")}`;
+      $("#album-timer").textContent = $("#puzzle-timer").textContent = $("#colors-timer").textContent = $("#numbers-timer").textContent = $("#shapes-timer").textContent = `${m}:${String(s).padStart(2, "0")}`;
       if (left <= 0) go("end");
     },
     stopAudio() {
@@ -723,8 +727,124 @@
   });
   $("#numbers-back").addEventListener("click", () => Numbers.close());
 
+
+  // ---------- Jogo de formas (caixa de encaixe, dentro da sessão do álbum) ----------
+  const SHAPES = [
+    { id: "circulo", name: "círculo" },
+    { id: "quadrado", name: "quadrado" },
+    { id: "triangulo", name: "triângulo" },
+    { id: "estrela", name: "estrela" },
+  ];
+  const Shapes = {
+    open: false, items: [], drag: null, rounds: 0, busy: false,
+    count() { return Math.min(4, Math.max(2, LS.get("shapesCount", 2))); },
+    start() { this.open = true; this.rounds = 0; Album.stopAudio(); $("#shapes").hidden = false; requestAnimationFrame(() => this.build()); },
+    close() { this.open = false; $("#shapes").hidden = true; this.drag = null; speechSynthesis?.cancel?.(); },
+    say(text) {
+      if (!("speechSynthesis" in window)) return;
+      const u = new SpeechSynthesisUtterance(text); u.lang = "pt-BR"; u.rate = 0.8;
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    },
+    build() {
+      const stage = $("#shapes-stage"); stage.innerHTML = "";
+      const st = stage.getBoundingClientRect();
+      const n = this.count(), shapes = SHAPES.slice(0, n);
+      const landscape = st.width > st.height * 1.1;
+      // tabuleiro com os buracos numa metade, peças soltas na outra
+      const board = landscape
+        ? { x: 12, y: 12, w: st.width / 2 - 18, h: st.height - 24 }
+        : { x: 12, y: 8, w: st.width - 24, h: st.height / 2 - 14 };
+      const zone = landscape
+        ? { x: st.width / 2 + 6, y: 12, w: st.width / 2 - 18, h: st.height - 24 }
+        : { x: 12, y: st.height / 2 + 6, w: st.width - 24, h: st.height / 2 - 14 };
+      const b = document.createElement("div"); b.className = "shape-board";
+      Object.assign(b.style, { left: board.x + "px", top: board.y + "px", width: board.w + "px", height: board.h + "px" });
+      stage.appendChild(b);
+      // tamanho da forma: cabe n em fila (retrato) ou coluna (paisagem)
+      const along = landscape ? board.h : board.w, across = landscape ? board.w : board.h;
+      const size = Math.floor(Math.min(along / n - 16, across - 28, 200));
+      const colors = TOKEN_COLORS.slice().sort(() => Math.random() - 0.5);
+      const holeOrder = shapes.slice().sort(() => Math.random() - 0.5);
+      const pieceOrder = shapes.slice().sort(() => Math.random() - 0.5);
+      const pos = (area, k, total) => landscape
+        ? { x: area.x + (area.w - size) / 2, y: area.y + (k + 0.5) * (area.h / total) - size / 2 }
+        : { x: area.x + (k + 0.5) * (area.w / total) - size / 2, y: area.y + (area.h - size) / 2 };
+      this.items = shapes.map((sh) => ({ sh, locked: false }));
+      holeOrder.forEach((sh, k) => {
+        const p = pos(board, k, n);
+        const h = document.createElement("div"); h.className = `shape shape-hole ${sh.id}`;
+        Object.assign(h.style, { left: p.x + "px", top: p.y + "px", width: size + "px", height: size + "px" });
+        stage.appendChild(h);
+        const it = this.items.find((x) => x.sh === sh); it.hole = h; it.hx = p.x; it.hy = p.y;
+      });
+      pieceOrder.forEach((sh, k) => {
+        const p = pos(zone, k, n);
+        const el = document.createElement("div"); el.className = `shape shape-piece ${sh.id}`;
+        el.dataset.shape = sh.id;
+        Object.assign(el.style, { left: p.x + "px", top: p.y + "px", width: size + "px", height: size + "px", background: colors[k % colors.length] });
+        stage.appendChild(el);
+        const it = this.items.find((x) => x.sh === sh); it.el = el; it.ox = p.x; it.oy = p.y;
+      });
+      this.size = size; this.busy = false;
+      $("#shapes-prompt").textContent = "Encaixa!";
+    },
+    onDown(e) {
+      const el = e.target.closest(".shape-piece"); if (!el || !this.open || this.busy) return;
+      const it = this.items.find((x) => x.el === el); if (!it || it.locked) return;
+      e.preventDefault();
+      const r = el.getBoundingClientRect();
+      this.drag = { it, dx: e.clientX - r.left, dy: e.clientY - r.top };
+      el.classList.add("drag");
+      try { el.setPointerCapture(e.pointerId); } catch {}
+    },
+    onMove(e) {
+      if (!this.drag) return;
+      const st = $("#shapes-stage").getBoundingClientRect();
+      const { it, dx, dy } = this.drag;
+      it.el.style.left = e.clientX - st.left - dx + "px";
+      it.el.style.top = e.clientY - st.top - dy + "px";
+    },
+    onUp() {
+      if (!this.drag) return;
+      const { it } = this.drag; this.drag = null;
+      it.el.classList.remove("drag");
+      const cx = parseFloat(it.el.style.left) + this.size / 2, cy = parseFloat(it.el.style.top) + this.size / 2;
+      const tol = this.size * 0.5;
+      // buraco mais próximo do ponto onde soltou
+      let near = null, best = Infinity;
+      for (const o of this.items) { const d = Math.hypot(cx - (o.hx + this.size / 2), cy - (o.hy + this.size / 2)); if (d < best) { best = d; near = o; } }
+      if (near === it && best < tol) {
+        it.locked = true;
+        it.el.classList.add("locked"); it.hole.classList.add("filled");
+        it.el.style.left = it.hx + "px"; it.el.style.top = it.hy + "px";
+        this.say(it.sh.name);
+        if (this.items.every((x) => x.locked)) this.finish();
+        return;
+      }
+      // errou o buraco ou soltou longe: a peça volta e o buraco certo pulsa
+      it.el.style.left = it.ox + "px"; it.el.style.top = it.oy + "px";
+      if (best < tol) { it.hole.classList.remove("hint"); void it.hole.offsetWidth; it.hole.classList.add("hint"); this.say("não coube"); }
+    },
+    finish() {
+      this.busy = true; this.rounds++;
+      $("#shapes-prompt").textContent = "Encaixou!";
+      setTimeout(() => {
+        if (!this.open) return;
+        if (this.rounds >= 6) { this.close(); toast("Chega de formas por agora. Que tal a caixa de sapato com furos?"); return; }
+        this.build();
+      }, 1600);
+    },
+  };
+  const sstage = $("#shapes-stage");
+  sstage.addEventListener("pointerdown", (e) => Shapes.onDown(e));
+  sstage.addEventListener("pointermove", (e) => Shapes.onMove(e));
+  ["pointerup", "pointercancel"].forEach((ev) => sstage.addEventListener(ev, () => Shapes.onUp()));
+  $("#shapes-back").addEventListener("click", () => Shapes.close());
+  window.addEventListener("resize", () => { if (Shapes.open && !Shapes.items.some((i) => i.locked)) Shapes.build(); });
+
   $("#album-grid").addEventListener("pointerdown", (e) => {
     if (e.target.closest("#album-montar")) { Puzzle.start(Album.lastId); return; }
+    if (e.target.closest("#album-formas")) { Shapes.start(); return; }
     if (e.target.closest("#album-contar")) { Numbers.start(); return; }
     if (e.target.closest("#album-cores")) { Colors.start(); return; }
     if (e.target.closest("#album-add")) { go("setup"); return; }
@@ -777,6 +897,7 @@
       $("#pieces-select").value = String(Puzzle.count());
       $("#colors-options").value = String(Colors.options());
       $("#numbers-max").value = String(Numbers.max());
+      $("#shapes-count").value = String(Shapes.count());
       $("#colors-set").value = String(Colors.set().length);
       await Album.load();
       $("#setup-list").innerHTML = Album.cards.length ? Album.cards.map((c) => `
@@ -877,6 +998,7 @@
   });
   const saveColors = () => { LS.set("colors", { options: Number($("#colors-options").value), set: Number($("#colors-set").value) }); toast("Cores salvas"); };
   $("#colors-options").addEventListener("change", saveColors);
+  $("#shapes-count").addEventListener("change", (e) => { LS.set("shapesCount", Number(e.target.value)); toast("Formas salvas"); });
   $("#numbers-max").addEventListener("change", (e) => { LS.set("numbersMax", Number(e.target.value)); toast("Contagem salva"); });
   $("#colors-set").addEventListener("change", saveColors);
   $("#pieces-select").addEventListener("change", (e) => { LS.set("pieces", Number(e.target.value)); toast("Peças salvas"); });

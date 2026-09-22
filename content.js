@@ -285,6 +285,23 @@ window.ACTIVITIES = [
     words: "um, dois, três, mais, um só, já",
   },
   {
+    id: "caixa-de-encaixe",
+    band: "dois",
+    domain: "motorFino",
+    title: "Caixa de encaixe caseira",
+    summary: "Uma caixa de sapato com dois furos: um redondo e um quadrado. Encaixar é discriminar forma, girar o punho e persistir.",
+    materials: ["Caixa de sapato com tampa", "Estilete (só o adulto) para 2 furos: redondo e quadrado", "Tampas redondas de pote e blocos quadrados que caibam"],
+    steps: [
+      "Faça os dois furos na tampa, com folga. Mostre uma tampa redonda passando pelo furo redondo: \"entrou!\"",
+      "Entregue uma peça e espere. Se {ela} tentar o furo errado, só diga \"não coube, tenta o outro\".",
+      "Quando encaixar, nomeie a forma: \"redondo!\". O nome vem depois do sucesso, não antes.",
+      "Abra a caixa e despeje tudo. Recomeçar é metade da graça.",
+      "Semanas depois, acrescente um furo triangular. Um por vez.",
+    ],
+    observe: ["Distingue redondo de quadrado sem tentar todos?", "Gira a peça para caber?", "Insiste depois de errar?"],
+    words: "redondo, quadrado, entrou, não coube, gira, de novo",
+  },
+  {
     id: "encaixe-tampas",
     band: "dois",
     domain: "motorFino",
