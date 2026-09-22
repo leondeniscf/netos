@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#f6efe4">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Netos">
+  <title>Netos</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ===================== INÍCIO ===================== -->
+  <section id="view-home" class="view active">
+    <header class="home-header">
+      <h1 id="home-name">Netos</h1>
+      <p class="sub" id="home-age">brincar, conversar, crescer</p>
+    </header>
+
+    <div class="kids" id="kids-row"></div>
+
+    <div class="home-cards">
+      <button class="home-card adult" data-go="guide">
+        <span class="home-card-icon">🧑‍🦳</span>
+        <span class="home-card-title">Guia do adulto</span>
+        <span class="home-card-desc" id="home-guide-desc">Atividades de 10 minutos, marcos do desenvolvimento e diário. Só para você.</span>
+      </button>
+
+      <button class="home-card child" data-go="album" id="home-album-card">
+        <span class="home-card-icon">📸</span>
+        <span class="home-card-title">Álbum falante</span>
+        <span class="home-card-desc" id="home-album-desc">Fotos da família com a voz de cada um. Para usar junto, poucos minutos.</span>
+      </button>
+    </div>
+
+    <p class="home-note" id="home-note"></p>
+    <div class="row center">
+      <button class="btn ghost small" data-go="kids">Gerenciar crianças</button>
+    </div>
+  </section>
+
+  <!-- ===================== CRIANÇAS ===================== -->
+  <section id="view-kids" class="view">
+    <header class="bar">
+      <button class="bar-btn" data-go="home" aria-label="Voltar">‹</button>
+      <h2>Crianças</h2>
+      <span class="bar-spacer"></span>
+    </header>
+    <div class="content">
+      <div class="card">
+        <p class="eyebrow" id="kid-form-title">Nova criança</p>
+        <input type="hidden" id="kid-id">
+        <input type="text" id="kid-name" placeholder="Nome" maxlength="30">
+        <label class="field" style="margin-top:10px">
+          <span>Nascimento</span>
+          <input type="date" id="kid-birth">
+        </label>
+        <label class="field" style="margin-top:10px">
+          <span>Como falar</span>
+          <select id="kid-gender">
+            <option value="f">ela</option>
+            <option value="m">ele</option>
+          </select>
+        </label>
+        <div class="row">
+          <button class="btn primary" id="kid-save">Salvar</button>
+          <button class="btn ghost" id="kid-cancel" hidden>Cancelar</button>
+        </div>
+      </div>
+      <div class="list" id="kids-list"></div>
+      <p class="hint">Marcos, diário e atividades feitas ficam separados por criança. O álbum de fotos é compartilhado pela família.</p>
+    </div>
+  </section>
+
+  <!-- ===================== GUIA DO ADULTO ===================== -->
+  <section id="view-guide" class="view">
+    <header class="bar">
+      <button class="bar-btn" data-go="home" aria-label="Voltar">‹</button>
+      <h2 id="guide-title">Guia do adulto</h2>
+      <span class="bar-spacer"></span>
+    </header>
+
+    <nav class="tabs" id="guide-tabs">
+      <button class="tab active" data-tab="today">Hoje</button>
+      <button class="tab" data-tab="activities">Atividades</button>
+      <button class="tab" data-tab="milestones">Marcos</button>
+      <button class="tab" data-tab="diary">Diário</button>
+    </nav>
+
+    <div class="tab-panel active" id="tab-today">
+      <div class="card today-card">
+        <p class="eyebrow">Sugestão de hoje</p>
+        <h3 id="today-title"></h3>
+        <p class="today-domain" id="today-domain"></p>
+        <p id="today-summary"></p>
+        <div class="row">
+          <button class="btn primary" id="today-open">Ver roteiro</button>
+          <button class="btn ghost" id="today-shuffle">Outra</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="eyebrow">Por que assim</p>
+        <ul class="tips" id="tips-list"></ul>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-activities">
+      <div class="chips" id="domain-chips"></div>
+      <div class="list" id="activity-list"></div>
+    </div>
+
+    <div class="tab-panel" id="tab-milestones">
+      <p class="hint" id="ms-hint"></p>
+      <div id="milestone-groups"></div>
+    </div>
+
+    <div class="tab-panel" id="tab-diary">
+      <div class="card">
+        <p class="eyebrow">Registrar</p>
+        <div class="diary-types" id="diary-types">
+          <button class="chip active" data-type="palavra">Palavra nova</button>
+          <button class="chip" data-type="frase">Frase</button>
+          <button class="chip" data-type="conquista">Conquista</button>
+          <button class="chip" data-type="momento">Momento</button>
+        </div>
+        <textarea id="diary-text" rows="2" placeholder="Ex.: falou 'água' apontando para o copo"></textarea>
+        <div class="row">
+          <button class="btn primary" id="diary-save">Salvar</button>
+        </div>
+      </div>
+      <div class="list" id="diary-list"></div>
+      <div class="row center">
+        <button class="btn ghost small" id="diary-export">Exportar diário (texto)</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== DETALHE DA ATIVIDADE ===================== -->
+  <section id="view-activity" class="view">
+    <header class="bar">
+      <button class="bar-btn" data-go="guide" aria-label="Voltar">‹</button>
+      <h2 id="act-title"></h2>
+      <span class="bar-spacer"></span>
+    </header>
+    <div class="content">
+      <p class="today-domain" id="act-domain"></p>
+      <p class="lead" id="act-summary"></p>
+
+      <div class="card">
+        <p class="eyebrow">Você vai precisar</p>
+        <ul id="act-materials"></ul>
+      </div>
+
+      <div class="card">
+        <p class="eyebrow">Roteiro de 10 minutos</p>
+        <ol id="act-steps"></ol>
+      </div>
+
+      <div class="card">
+        <p class="eyebrow">O que observar</p>
+        <ul id="act-observe"></ul>
+      </div>
+
+      <div class="card soft">
+        <p class="eyebrow">Palavras para repetir</p>
+        <p id="act-words" class="words"></p>
+      </div>
+
+      <div class="row">
+        <button class="btn primary" id="act-done">Fizemos hoje ✓</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ÁLBUM (uso conjunto) ===================== -->
+  <section id="view-album" class="view album">
+    <div class="album-top">
+      <button class="album-exit" id="album-exit" aria-label="Sair (segure)">
+        <span class="album-exit-ring"></span>
+        <span class="album-exit-label">segure</span>
+      </button>
+      <div class="album-timer" id="album-timer"></div>
+      <button class="album-setup-btn" id="album-setup-btn" aria-label="Configurar">⚙</button>
+    </div>
+
+    <div class="album-grid" id="album-grid"></div>
+
+    <div class="album-empty" id="album-empty">
+      <p>Ainda não há fotos.</p>
+      <button class="btn primary" id="album-empty-setup">Adicionar a primeira</button>
+    </div>
+  </section>
+
+  <!-- ===================== FIM DA SESSÃO ===================== -->
+  <section id="view-end" class="view end">
+    <div class="end-inner">
+      <div class="end-emoji">🌿</div>
+      <h2>Chega de tela por agora</h2>
+      <p>Que tal isso, agora de verdade:</p>
+      <div class="card end-card">
+        <h3 id="end-title"></h3>
+        <p id="end-summary"></p>
+      </div>
+      <button class="btn primary big" data-go="home">Vamos brincar</button>
+    </div>
+  </section>
+
+  <!-- ===================== CONFIGURAR ÁLBUM (adulto) ===================== -->
+  <section id="view-setup" class="view">
+    <header class="bar">
+      <button class="bar-btn" data-go="album" aria-label="Voltar">‹</button>
+      <h2>Configurar álbum</h2>
+      <span class="bar-spacer"></span>
+    </header>
+
+    <div class="content">
+      <div class="card">
+        <p class="eyebrow">Nova foto</p>
+        <p class="hint">Use fotos reais: pessoas da família, o cachorro, o carro do vovô, a caneca dela. Grave a voz da própria pessoa dizendo o nome e uma frase curta.</p>
+
+        <label class="file-drop" id="photo-drop">
+          <input type="file" id="photo-input" accept="image/*" capture="environment">
+          <img id="photo-preview" alt="" hidden>
+          <span id="photo-drop-label">📷 Tirar ou escolher foto</span>
+        </label>
+
+        <input type="text" id="card-name" placeholder="Nome (ex.: Vovô, Tia Ana, Bolinha)" maxlength="30">
+
+        <div class="rec-row">
+          <button class="btn rec" id="rec-btn">● Gravar voz</button>
+          <button class="btn ghost" id="rec-play" disabled>▶ Ouvir</button>
+          <span class="rec-status" id="rec-status">sem áudio</span>
+        </div>
+
+        <div class="row">
+          <button class="btn primary" id="card-save" disabled>Salvar foto</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="eyebrow">Fotos salvas</p>
+        <div class="setup-list" id="setup-list"></div>
+      </div>
+
+      <div class="card">
+        <p class="eyebrow">Sessão</p>
+        <label class="field">
+          <span>Encerrar o álbum depois de</span>
+          <select id="limit-select">
+            <option value="5">5 minutos</option>
+            <option value="8">8 minutos</option>
+            <option value="10">10 minutos</option>
+            <option value="15">15 minutos</option>
+          </select>
+        </label>
+        <p class="hint">Sessões curtas com você participando. O app avisa e encerra sozinho, sem tela de prêmio.</p>
+      </div>
+
+      <div class="card">
+        <p class="eyebrow">Backup</p>
+        <div class="row">
+          <button class="btn ghost" id="backup-export">Exportar tudo</button>
+          <label class="btn ghost">Importar<input type="file" id="backup-import" accept="application/json" hidden></label>
+        </div>
+        <p class="hint">Gera um arquivo com fotos, vozes, diário e marcos. Guarde no seu computador ou nuvem.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="content.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
