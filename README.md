@@ -9,6 +9,7 @@ App web (PWA) para acompanhar o desenvolvimento das crianças da família e, par
   - **Faixa dos 2 anos (15 a 42 meses)**: 15 atividades de 10 minutos em 5 domínios, marcos de 24 e 30 meses, diário, e acesso ao álbum falante.
 - **Guia do adulto**: sugestão do dia (prioriza o domínio menos praticado), roteiro passo a passo, o que observar, palavras para repetir, marcos com checklist, diário de palavras novas e momentos. Os textos usam "ela" ou "ele" conforme o cadastro.
 - **Álbum falante** (uso conjunto, criança de 2 anos com adulto): fotos reais da família com a voz gravada de cada pessoa. Sem pontuação, sem prêmio, sem autoplay. Encerra sozinho depois de 5 a 15 minutos (padrão 8) com uma sugestão de brincadeira física. Sair exige segurar o botão por 2 segundos; configurar exige segurar a engrenagem.
+- **Quebra-cabeça** (dentro do álbum, mesma sessão e mesmo limite): a foto tocada por último vira um quebra-cabeça de 2, 3 ou 4 peças grandes, com encaixe generoso. Ao completar, toca a voz da pessoa. Sem pontos, sem tempo, sem confete. O número de peças é definido pelo adulto na configuração. O guia também traz a versão física, com foto impressa em papelão, que é a mais indicada aos 2 anos.
 - **Backup**: exporta e importa um arquivo JSON com fotos, vozes, marcos e diário de todas as crianças.
 
 Perfis iniciais já cadastrados com datas **aproximadas** (ajuste em "Gerenciar crianças"): Nicole e Luca (2 anos), Aurelinho, Felipe e Laura (2 meses).

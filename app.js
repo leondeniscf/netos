@@ -398,6 +398,7 @@
     leave() {
       clearInterval(this.tick); this.tick = null;
       this.stopAudio();
+      Puzzle.close();
       if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
     },
     renderGrid() {
@@ -407,22 +408,27 @@
         <button class="album-card" data-card="${c.id}" aria-label="${esc(c.name)}">
           <img src="${this.urls.get(c.id)}" alt="">
           <span class="name">${esc(c.name)}</span>
-        </button>`).join("");
+        </button>`).join("") + (this.cards.length ? `
+        <button class="album-card montar" id="album-montar" aria-label="Montar quebra-cabeça">
+          <span class="ic">🧩</span><span class="name">Montar</span>
+        </button>` : "");
     },
     updateTimer() {
       const elapsed = Date.now() - this.startedAt;
       const total = this.limitMin() * 60000;
       const left = Math.max(0, total - elapsed);
       const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
-      $("#album-timer").textContent = `${m}:${String(s).padStart(2, "0")}`;
+      $("#album-timer").textContent = $("#puzzle-timer").textContent = `${m}:${String(s).padStart(2, "0")}`;
       if (left <= 0) go("end");
     },
     stopAudio() {
       if (this.audio) { this.audio.pause(); this.audio.src = ""; this.audio = null; }
       $$(".album-card.playing").forEach((c) => c.classList.remove("playing"));
     },
+    lastId: null,
     play(id) {
       const c = this.cards.find((x) => x.id === id); if (!c) return;
+      this.lastId = id;
       this.stopAudio();
       const el = $(`[data-card="${id}"]`);
       el.classList.add("playing");
@@ -442,7 +448,139 @@
     },
   };
 
+
+  // ---------- Quebra-cabeça (dentro da sessão do álbum) ----------
+  const Puzzle = {
+    card: null, pieces: [], img: null, board: null, drag: null, open: false,
+    count() { return Math.min(4, Math.max(2, LS.get("pieces", 2))); },
+    layout(n) { return n === 4 ? { cols: 2, rows: 2 } : { cols: n, rows: 1 }; },
+    async start(cardId) {
+      const pool = Album.cards; if (!pool.length) return;
+      const c = pool.find((x) => x.id === cardId) || pool[Math.floor(Math.random() * pool.length)];
+      this.card = c; this.open = true;
+      Album.stopAudio();
+      $("#puzzle").hidden = false; $("#puzzle-done").hidden = true;
+      $("#puzzle-name").textContent = c.name;
+      $("#puzzle-board").classList.remove("done");
+      $$(".puzzle-piece, .puzzle-slot", $("#puzzle-stage")).forEach((el) => el.remove());
+      await new Promise((res) => { const im = new Image(); im.onload = () => { this.img = im; res(); }; im.onerror = res; im.src = Album.urls.get(c.id); });
+      requestAnimationFrame(() => this.build());
+    },
+    close() { this.open = false; $("#puzzle").hidden = true; this.drag = null; },
+    build() {
+      const stage = $("#puzzle-stage"), st = stage.getBoundingClientRect();
+      $$(".puzzle-piece, .puzzle-slot", stage).forEach((el) => el.remove());
+      const n = this.count(), { cols, rows } = this.layout(n);
+      const landscape = st.width > st.height * 1.1;
+      // tabuleiro: quadrado que cabe na metade do palco, deixando espaço para as peças soltas
+      const side = Math.floor(landscape ? Math.min(st.height - 24, st.width * 0.5 - 24) : Math.min(st.width - 24, st.height * 0.5 - 16));
+      const bx = landscape ? 12 : Math.floor((st.width - side) / 2), by = 8;
+      const board = $("#puzzle-board");
+      Object.assign(board.style, { left: bx + "px", top: by + "px", width: side + "px", height: side + "px" });
+      // imagem "cover" no tabuleiro
+      const iw = this.img?.naturalWidth || side, ih = this.img?.naturalHeight || side;
+      const sc = Math.max(side / iw, side / ih), dw = Math.round(iw * sc), dh = Math.round(ih * sc);
+      const ox = Math.round((side - dw) / 2), oy = Math.round((side - dh) / 2);
+      const url = Album.urls.get(this.card.id);
+      board.style.setProperty("--img", `url("${url}")`);
+      board.style.setProperty("--size", `${dw}px ${dh}px`);
+      board.style.setProperty("--pos", `${ox}px ${oy}px`);
+      this.bg = { dw, dh, ox, oy };
+      this.board = { x: bx, y: by, side, pw: side / cols, ph: side / rows };
+      // zona de peças soltas
+      const zone = landscape
+        ? { x: bx + side + 16, y: 8, w: st.width - side - 40, h: st.height - 16 }
+        : { x: 12, y: by + side + 16, w: st.width - 24, h: st.height - side - by - 24 };
+      this.pieces = [];
+      const order = Array.from({ length: n }, (_, i) => i).sort(() => Math.random() - 0.5);
+      // peças soltas em grade: 2x2 para 4 peças; fila (retrato) ou coluna (paisagem) para 2 e 3
+      const lay = n === 4 ? { c: 2, r: 2 } : landscape ? { c: 1, r: n } : { c: n, r: 1 };
+      const gap = 10;
+      const pw = this.board.pw, ph = this.board.ph;
+      const scale = Math.max(0.35, Math.min(1, (zone.w - gap * (lay.c + 1)) / lay.c / pw, (zone.h - gap * (lay.r + 1)) / lay.r / ph));
+      const cellW = zone.w / lay.c, cellH = zone.h / lay.r;
+      order.forEach((i, k) => {
+        const col = i % cols, row = Math.floor(i / cols);
+        const slot = document.createElement("div");
+        slot.className = "puzzle-slot";
+        Object.assign(slot.style, { left: bx + col * pw + "px", top: by + row * ph + "px", width: pw + "px", height: ph + "px" });
+        stage.appendChild(slot);
+        const el = document.createElement("div");
+        el.className = "puzzle-piece"; el.dataset.i = i;
+        const w = pw * scale, h = ph * scale;
+        Object.assign(el.style, {
+          width: w + "px", height: h + "px",
+          backgroundImage: `url("${url}")`,
+          backgroundSize: `${dw * scale}px ${dh * scale}px`,
+          backgroundPosition: `${(ox - col * pw) * scale}px ${(oy - row * ph) * scale}px`,
+        });
+        const jitter = () => (Math.random() - 0.5) * 10;
+        const cx = k % lay.c, cy = Math.floor(k / lay.c);
+        const x = zone.x + cx * cellW + (cellW - w) / 2 + jitter();
+        const y = zone.y + cy * cellH + (cellH - h) / 2 + jitter();
+        el.style.left = Math.max(0, Math.min(st.width - w, x)) + "px";
+        el.style.top = Math.max(0, Math.min(st.height - h, y)) + "px";
+        stage.appendChild(el);
+        this.pieces.push({ i, col, row, el, scale, locked: false, tx: bx + col * pw, ty: by + row * ph });
+      });
+    },
+    onDown(e) {
+      const el = e.target.closest(".puzzle-piece"); if (!el || !this.open) return;
+      const p = this.pieces.find((x) => x.el === el); if (!p || p.locked) return;
+      e.preventDefault();
+      const r = el.getBoundingClientRect();
+      this.drag = { p, dx: e.clientX - r.left, dy: e.clientY - r.top };
+      el.classList.add("drag");
+      try { el.setPointerCapture(e.pointerId); } catch {}
+    },
+    onMove(e) {
+      if (!this.drag) return;
+      const st = $("#puzzle-stage").getBoundingClientRect();
+      const { p, dx, dy } = this.drag;
+      p.el.style.left = e.clientX - st.left - dx + "px";
+      p.el.style.top = e.clientY - st.top - dy + "px";
+    },
+    onUp() {
+      if (!this.drag) return;
+      const { p } = this.drag; this.drag = null;
+      p.el.classList.remove("drag");
+      const cx = parseFloat(p.el.style.left) + p.el.offsetWidth / 2, cy = parseFloat(p.el.style.top) + p.el.offsetHeight / 2;
+      const tx = p.tx + this.board.pw / 2, ty = p.ty + this.board.ph / 2;
+      const tol = Math.min(this.board.pw, this.board.ph) * 0.45; // encaixe generoso
+      if (Math.hypot(cx - tx, cy - ty) < tol) {
+        p.locked = true;
+        p.el.classList.add("locked");
+        const { dw, dh, ox, oy } = this.bg;
+        Object.assign(p.el.style, {
+          left: p.tx + "px", top: p.ty + "px", width: this.board.pw + "px", height: this.board.ph + "px",
+          backgroundSize: `${dw}px ${dh}px`,
+          backgroundPosition: `${ox - p.col * this.board.pw}px ${oy - p.row * this.board.ph}px`,
+        });
+        if (this.pieces.every((x) => x.locked)) this.finish();
+      }
+    },
+    finish() {
+      $("#puzzle-board").classList.add("done");
+      // a única recompensa: a voz da pessoa da foto
+      const c = this.card;
+      if (c.audio) { const a = new Audio(URL.createObjectURL(c.audio)); a.onended = () => URL.revokeObjectURL(a.src); a.play().catch(() => {}); }
+      else if ("speechSynthesis" in window) { const u = new SpeechSynthesisUtterance(c.name); u.lang = "pt-BR"; u.rate = 0.85; speechSynthesis.cancel(); speechSynthesis.speak(u); }
+      setTimeout(() => { if (this.open) $("#puzzle-done").hidden = false; }, 1800);
+    },
+  };
+  const pstage = $("#puzzle-stage");
+  pstage.addEventListener("pointerdown", (e) => Puzzle.onDown(e));
+  pstage.addEventListener("pointermove", (e) => Puzzle.onMove(e));
+  ["pointerup", "pointercancel"].forEach((ev) => pstage.addEventListener(ev, () => Puzzle.onUp()));
+  $("#puzzle-back").addEventListener("click", () => Puzzle.close());
+  $("#puzzle-again").addEventListener("click", () => {
+    const others = Album.cards.filter((c) => c.id !== Puzzle.card?.id);
+    Puzzle.start(others.length ? others[Math.floor(Math.random() * others.length)].id : Puzzle.card.id);
+  });
+  window.addEventListener("resize", () => { if (Puzzle.open && !Puzzle.pieces.some((p) => p.locked)) Puzzle.build(); });
+
   $("#album-grid").addEventListener("pointerdown", (e) => {
+    if (e.target.closest("#album-montar")) { Puzzle.start(Album.lastId); return; }
     const b = e.target.closest("[data-card]"); if (b) Album.play(b.dataset.card);
   });
   // impede zoom por duplo toque e seleção dentro do álbum
@@ -489,6 +627,7 @@
     photo: null, audio: null, rec: null, chunks: [], previewUrl: null,
     async render() {
       $("#limit-select").value = String(Album.limitMin());
+      $("#pieces-select").value = String(Puzzle.count());
       await Album.load();
       $("#setup-list").innerHTML = Album.cards.length ? Album.cards.map((c) => `
         <div class="setup-item"><img src="${Album.urls.get(c.id)}" alt=""><span class="n">${esc(c.name)}</span>
@@ -586,6 +725,7 @@
     await DB.del(b.dataset.rm);
     Setup.render();
   });
+  $("#pieces-select").addEventListener("change", (e) => { LS.set("pieces", Number(e.target.value)); toast("Peças salvas"); });
   $("#limit-select").addEventListener("change", (e) => {
     LS.set("limit", Number(e.target.value));
     toast("Limite salvo");

@@ -191,6 +191,21 @@
 
     <div class="album-grid" id="album-grid"></div>
 
+    <!-- quebra-cabeça: fica dentro do álbum para manter a mesma sessão -->
+    <div class="puzzle" id="puzzle" hidden>
+      <div class="puzzle-top">
+        <button class="puzzle-back" id="puzzle-back" aria-label="Voltar ao álbum">‹</button>
+        <span class="puzzle-name" id="puzzle-name"></span>
+        <span class="puzzle-timer" id="puzzle-timer"></span>
+      </div>
+      <div class="puzzle-stage" id="puzzle-stage">
+        <div class="puzzle-board" id="puzzle-board"></div>
+      </div>
+      <div class="puzzle-done" id="puzzle-done" hidden>
+        <button class="btn primary big" id="puzzle-again">Outra foto</button>
+      </div>
+    </div>
+
     <div class="album-empty" id="album-empty">
       <p>Ainda não há fotos.</p>
       <button class="btn primary" id="album-empty-setup">Adicionar a primeira</button>
@@ -260,6 +275,15 @@
           </select>
         </label>
         <p class="hint">Sessões curtas com você participando. O app avisa e encerra sozinho, sem tela de prêmio.</p>
+        <label class="field" style="margin-top:12px">
+          <span>Peças do quebra-cabeça</span>
+          <select id="pieces-select">
+            <option value="2">2 peças</option>
+            <option value="3">3 peças</option>
+            <option value="4">4 peças</option>
+          </select>
+        </label>
+        <p class="hint">Comece com 2. Passe para 3 ou 4 só quando as 2 ficarem fáceis várias vezes seguidas.</p>
       </div>
 
       <div class="card">

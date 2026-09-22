@@ -251,6 +251,23 @@ window.ACTIVITIES = [
     words: "olha, pedra, folha, passarinho, carro, casa",
   },
   {
+    id: "quebra-cabeca-foto",
+    band: "dois",
+    domain: "cognitivo",
+    title: "Quebra-cabeça de foto",
+    summary: "Uma foto grande da família colada em papelão e cortada em 2 ou 3 partes. Aos 2 anos, peças grandes e poucas: o que se treina é ver o todo a partir das partes.",
+    materials: ["Uma foto impressa em tamanho A4 ou maior (rosto de alguém querido funciona melhor)", "Papelão de caixa e cola", "Tesoura"],
+    steps: [
+      "Cole a foto no papelão. Mostre inteira e nomeie: \"olha o vovô!\". Deixe {ela} olhar bastante.",
+      "Corte em 2 partes na frente {dela}, com um corte reto ou levemente curvo. \"Cortei! Cadê o vovô?\"",
+      "Separe as partes um pouco e espere. Se {ela} não juntar, junte devagar e diga \"voltou!\".",
+      "Repita várias vezes. Depois de alguns dias, corte uma das partes de novo, para 3 peças.",
+      "Guarde as peças num envelope com a foto inteira desenhada fora, para {ela} achar sozinha.",
+    ],
+    observe: ["Vira a peça para encaixar?", "Junta 2 partes sem ajuda?", "Fala o nome de quem está na foto quando monta?"],
+    words: "cadê, achou, encaixa, vira, junto, inteiro",
+  },
+  {
     id: "encaixe-tampas",
     band: "dois",
     domain: "motorFino",
