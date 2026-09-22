@@ -399,26 +399,30 @@
       clearInterval(this.tick); this.tick = null;
       this.stopAudio();
       Puzzle.close();
+      Colors.close();
       if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
     },
     renderGrid() {
       const g = $("#album-grid");
-      $("#album-empty").classList.toggle("show", this.cards.length === 0);
-      g.innerHTML = this.cards.map((c) => `
+      $("#album-empty").classList.toggle("show", false);
+      g.innerHTML = (this.cards.length ? "" : `<button class="album-card montar" id="album-add" aria-label="Adicionar fotos"><span class="ic">📷</span><span class="name">Adicionar fotos</span></button>`) + this.cards.map((c) => `
         <button class="album-card" data-card="${c.id}" aria-label="${esc(c.name)}">
           <img src="${this.urls.get(c.id)}" alt="">
           <span class="name">${esc(c.name)}</span>
         </button>`).join("") + (this.cards.length ? `
         <button class="album-card montar" id="album-montar" aria-label="Montar quebra-cabeça">
           <span class="ic">🧩</span><span class="name">Montar</span>
-        </button>` : "");
+        </button>` : "") + `
+        <button class="album-card cores" id="album-cores" aria-label="Jogo de cores">
+          <span class="ic">🎨</span><span class="name">Cores</span>
+        </button>`;
     },
     updateTimer() {
       const elapsed = Date.now() - this.startedAt;
       const total = this.limitMin() * 60000;
       const left = Math.max(0, total - elapsed);
       const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
-      $("#album-timer").textContent = $("#puzzle-timer").textContent = `${m}:${String(s).padStart(2, "0")}`;
+      $("#album-timer").textContent = $("#puzzle-timer").textContent = $("#colors-timer").textContent = `${m}:${String(s).padStart(2, "0")}`;
       if (left <= 0) go("end");
     },
     stopAudio() {
@@ -579,8 +583,78 @@
   });
   window.addEventListener("resize", () => { if (Puzzle.open && !Puzzle.pieces.some((p) => p.locked)) Puzzle.build(); });
 
+
+  // ---------- Jogo de cores (dentro da sessão do álbum) ----------
+  const COLORS = [
+    { id: "vermelho", name: "vermelho", hex: "#e0322b" },
+    { id: "azul", name: "azul", hex: "#2f6fd6" },
+    { id: "amarelo", name: "amarelo", hex: "#f2c12e" },
+    { id: "verde", name: "verde", hex: "#3aa655" },
+    { id: "laranja", name: "laranja", hex: "#f07f1d" },
+    { id: "roxo", name: "roxo", hex: "#8b4fc2" },
+  ];
+  const Colors = {
+    open: false, target: null, last: null, busy: false, wrong: 0, rounds: 0,
+    options() { return LS.get("colors", {}).options === 3 ? 3 : 2; },
+    set() { return COLORS.slice(0, LS.get("colors", {}).set === 6 ? 6 : 3); },
+    start() {
+      this.open = true; this.rounds = 0;
+      Album.stopAudio();
+      $("#colors").hidden = false;
+      this.round();
+    },
+    close() { this.open = false; $("#colors").hidden = true; speechSynthesis?.cancel?.(); },
+    say(text) {
+      if (!("speechSynthesis" in window)) return;
+      const u = new SpeechSynthesisUtterance(text); u.lang = "pt-BR"; u.rate = 0.8;
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    },
+    round() {
+      const set = this.set(), n = Math.min(this.options(), set.length);
+      const pool = set.filter((c) => c.id !== this.last?.id);
+      this.target = pool[Math.floor(Math.random() * pool.length)];
+      this.last = this.target;
+      const others = set.filter((c) => c.id !== this.target.id).sort(() => Math.random() - 0.5).slice(0, n - 1);
+      const shown = [this.target, ...others].sort(() => Math.random() - 0.5);
+      $("#colors-prompt").textContent = `Cadê o ${this.target.name}?`;
+      $("#colors-stage").innerHTML = shown.map((c) => `<button class="color-blob" data-color="${c.id}" style="background:${c.hex}" aria-label="${c.name}"></button>`).join("");
+      this.busy = false; this.wrong = 0;
+      this.say(`Cadê o ${this.target.name}?`);
+    },
+    tap(id) {
+      if (this.busy || !this.open) return;
+      const c = COLORS.find((x) => x.id === id);
+      if (id !== this.target.id) {
+        // erro: sem "não", só a cor certa pulsa e a pergunta repete
+        this.wrong++;
+        const t = $(`[data-color="${this.target.id}"]`);
+        t.classList.remove("hint"); void t.offsetWidth; t.classList.add("hint");
+        if (this.wrong === 1) this.say(`${c.name}. Cadê o ${this.target.name}?`);
+        return;
+      }
+      this.busy = true; this.rounds++;
+      const flash = $("#colors-flash");
+      flash.style.background = c.hex;
+      $("#colors-flash-name").textContent = c.name;
+      flash.classList.add("show");
+      this.say(c.name);
+      setTimeout(() => {
+        flash.classList.remove("show");
+        if (!this.open) return;
+        if (this.rounds >= 8) { this.close(); toast("Chega de cores por agora. Vamos achar cores de verdade pela casa?"); return; }
+        setTimeout(() => this.open && this.round(), 300);
+      }, 1700);
+    },
+  };
+  $("#colors-stage").addEventListener("pointerdown", (e) => {
+    const b = e.target.closest("[data-color]"); if (b) { e.preventDefault(); Colors.tap(b.dataset.color); }
+  });
+  $("#colors-back").addEventListener("click", () => Colors.close());
+
   $("#album-grid").addEventListener("pointerdown", (e) => {
     if (e.target.closest("#album-montar")) { Puzzle.start(Album.lastId); return; }
+    if (e.target.closest("#album-cores")) { Colors.start(); return; }
+    if (e.target.closest("#album-add")) { go("setup"); return; }
     const b = e.target.closest("[data-card]"); if (b) Album.play(b.dataset.card);
   });
   // impede zoom por duplo toque e seleção dentro do álbum
@@ -628,6 +702,8 @@
     async render() {
       $("#limit-select").value = String(Album.limitMin());
       $("#pieces-select").value = String(Puzzle.count());
+      $("#colors-options").value = String(Colors.options());
+      $("#colors-set").value = String(Colors.set().length);
       await Album.load();
       $("#setup-list").innerHTML = Album.cards.length ? Album.cards.map((c) => `
         <div class="setup-item"><img src="${Album.urls.get(c.id)}" alt=""><span class="n">${esc(c.name)}</span>
@@ -725,6 +801,9 @@
     await DB.del(b.dataset.rm);
     Setup.render();
   });
+  const saveColors = () => { LS.set("colors", { options: Number($("#colors-options").value), set: Number($("#colors-set").value) }); toast("Cores salvas"); };
+  $("#colors-options").addEventListener("change", saveColors);
+  $("#colors-set").addEventListener("change", saveColors);
   $("#pieces-select").addEventListener("change", (e) => { LS.set("pieces", Number(e.target.value)); toast("Peças salvas"); });
   $("#limit-select").addEventListener("change", (e) => {
     LS.set("limit", Number(e.target.value));

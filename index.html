@@ -191,6 +191,17 @@
 
     <div class="album-grid" id="album-grid"></div>
 
+    <!-- jogo de cores: dentro do álbum para manter a mesma sessão -->
+    <div class="colors" id="colors" hidden>
+      <div class="puzzle-top">
+        <button class="puzzle-back" id="colors-back" aria-label="Voltar ao álbum">‹</button>
+        <span class="colors-prompt" id="colors-prompt"></span>
+        <span class="puzzle-timer" id="colors-timer"></span>
+      </div>
+      <div class="colors-stage" id="colors-stage"></div>
+      <div class="colors-flash" id="colors-flash"><span id="colors-flash-name"></span></div>
+    </div>
+
     <!-- quebra-cabeça: fica dentro do álbum para manter a mesma sessão -->
     <div class="puzzle" id="puzzle" hidden>
       <div class="puzzle-top">
@@ -284,6 +295,21 @@
           </select>
         </label>
         <p class="hint">Comece com 2. Passe para 3 ou 4 só quando as 2 ficarem fáceis várias vezes seguidas.</p>
+        <label class="field" style="margin-top:12px">
+          <span>Jogo de cores: opções por vez</span>
+          <select id="colors-options">
+            <option value="2">2 cores</option>
+            <option value="3">3 cores</option>
+          </select>
+        </label>
+        <label class="field" style="margin-top:10px">
+          <span>Cores usadas</span>
+          <select id="colors-set">
+            <option value="3">vermelho, azul, amarelo</option>
+            <option value="6">+ verde, laranja, roxo</option>
+          </select>
+        </label>
+        <p class="hint">Leia a pergunta em voz alta e espere. Se errar, a cor certa pulsa: aponte junto e diga o nome. Sem corrigir com "não".</p>
       </div>
 
       <div class="card">
